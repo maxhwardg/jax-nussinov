@@ -4,7 +4,6 @@ import jax.numpy as jnp
 import jax.nn as jnn
 import numpy as np
 
-
 def make_jax_nussinov(n: int, min_hairpin: int = 0):
     """Make a JAX Nussinov function for a sequence of length n"""
     # TODO: Add checkpointing. Currently this uses for O(n^3) memory for gradient calculation
@@ -37,7 +36,7 @@ def make_jax_nussinov(n: int, min_hairpin: int = 0):
                         ip1 = jax.lax.select(
                             i+1 > k-1, 1.0, dp_table[i+1, k-1])
                         kp1 = jax.lax.select(k+1 > j, 1.0, dp_table[k+1, j])
-                        return base_probs[i, b1] * base_probs[j, b2] * bp_weights[b1, b2] * ip1 * kp1
+                        return base_probs[i, b1] * base_probs[k, b2] * bp_weights[b1, b2] * ip1 * kp1
                     res = jnp.sum(jax.vmap(process_pair)(bp_ids))
                     res = jax.lax.select(jnp.logical_and(
                         i + min_hairpin < k, k <= j), res, 0.0)
@@ -69,7 +68,7 @@ def standard_nussinov(base_probs, bp_weights, unpaired_weights, min_hairpin: int
                         kp1 = 1.0 if k+1 > j else dp[k+1][j]
                         ip1 = 1.0 if i+1 > k-1 else dp[i+1][k-1]
                         dp[i][j] += base_probs[i][b1] * \
-                            base_probs[j][b2] * bp_weights[b1][b2] * kp1 * ip1
+                            base_probs[k][b2] * bp_weights[b1][b2] * kp1 * ip1
     return float(dp[0][n-1])
 
 
@@ -83,7 +82,8 @@ def fuzz_test(min_hairpin: int = 0):
             bp_weights = np.random.normal(size=(4, 4))
             unpaired_weights = np.random.normal(size=(4))
             jax_res = nuss(logits, bp_weights, unpaired_weights)
-            std_res = standard_nussinov(probs, bp_weights, unpaired_weights, min_hairpin)
+            std_res = standard_nussinov(
+                probs, bp_weights, unpaired_weights, min_hairpin)
             assert np.allclose(
                 jax_res, std_res, atol=1e-5), f"n={n} epoch={epoch} jax={jax_res} std={std_res}"
             print(f"Epoch passed: n={n} epoch={epoch}")
