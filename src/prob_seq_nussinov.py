@@ -1,4 +1,9 @@
-"""Basic implementation of Nussinov algorithm in JAX"""
+"""
+Basic implementation of Nussinov algorithm in JAX.
+Operates on a probabilistic sequence model.
+Each nucleotide position has an independent probability distribution over the 4 nucleotides.
+Derivatives can be taken w.r.t. the logits of the base probabilities, the base pair weights, and the unpaired weights.
+"""
 import jax
 import jax.numpy as jnp
 import jax.nn as jnn
